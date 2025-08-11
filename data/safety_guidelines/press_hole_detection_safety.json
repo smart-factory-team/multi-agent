@@ -1,0 +1,125 @@
+{
+  "equipment_type": "PRESS_HOLE_DETECTION",
+  "category": "홀 감지 시스템 안전 관리",
+  "safety_version": "v1.0",
+  "general_safety_principles": [
+    "모든 홀 감지 작업 전 시스템 상태 점검 실시",
+    "감지 시스템 오류 시 즉시 생산 중단",
+    "정기적인 캘리브레이션을 통한 정확도 유지",
+    "비정상 감지 결과 발생 시 수동 검증 실시",
+    "시스템 유지보수 시 안전 절차 준수"
+  ],
+  "detailed_safety_guidelines": {
+    "hole_detection_protocols": [
+      {
+        "error_code": "PRESS-HOLE-{SEVERITY}-{HOLE_CLASS}-MISSING-{DATETIME}",
+        "error_name": "단일 홀 누락 감지",
+        "description": "단일 홀이 누락된 것으로 감지된 상황으로, 프레스 압력 부족, 금형 마모, 재료 두께 불균일이 주요 원인",
+        "causes": [
+          "프레스 압력 부족으로 인한 불완전 성형",
+          "금형 마모로 인한 홀 형성 불량",
+          "재료 두께 불균일로 인한 성형 품질 저하",
+          "감지 시스템 캘리브레이션 오차",
+          "조명 조건 변화로 인한 오감지",
+          "바운딩 박스 크기 임계값 설정 오류"
+        ],
+        "safety_measures": [
+          "프레스 압력을 표준 범위 내로 즉시 조정",
+          "금형 상태 점검 후 필요 시 교체",
+          "재료 품질 검사 강화",
+          "감지 시스템 정확도 검증",
+          "작업자 수동 확인 절차 시행",
+          "생산 일시 중단 검토 및 조치"
+        ]
+      },
+      {
+        "error_code": "PRESS-HOLE-{SEVERITY}-MULTI-MISSING-{DATETIME}",
+        "error_name": "다중 홀 누락 감지", 
+        "description": "여러 홀이 동시에 누락된 것으로 감지된 심각한 상황으로, 프레스 설정 이상이 주요 원인",
+        "causes": [
+          "프레스 전체 설정 이상",
+          "제어 시스템 동기화 문제",
+          "금형 정렬 불량",
+          "전원 공급 불안정",
+          "센서 네트워크 통신 오류",
+          "소프트웨어 버그 또는 오류"
+        ],
+        "safety_measures": [
+          "즉시 전체 생산 라인 중단",
+          "프레스 설정 전면 점검 및 리셋",
+          "긴급 기술진 투입",
+          "품질 관리팀 즉시 통보",
+          "불량품 격리 및 추적",
+          "전면적인 시스템 점검 실시"
+        ]
+      }
+    ]
+  },
+  "emergency_response": {
+    "immediate_actions": [
+      "비상정지 버튼 즉시 작동",
+      "홀 누락 경보 확인 및 대응",
+      "불량품 즉시 격리",
+      "관리자 및 품질팀 긴급 통보",
+      "시스템 로그 백업 및 보존"
+    ],
+    "emergency_contacts": [
+      {"role": "홀 감지 시스템 전문가", "phone": "내선 2001"},
+      {"role": "품질 관리 책임자", "phone": "내선 2002"},
+      {"role": "생산 라인 관리자", "phone": "내선 2003"},
+      {"role": "IT 시스템 관리자", "phone": "내선 2004"}
+    ]
+  },
+  "training_requirements": [
+    "홀 감지 시스템 운영 교육 이수 (신규 작업자 필수)",
+    "정기 시스템 점검 교육 참석 (월별)",
+    "비상상황 대응 훈련 (분기별)",
+    "품질 관리 절차 교육 (반기별)"
+  ],
+  "inspection_checklist": [
+    "홀 감지 카메라 렌즈 청결 상태 확인",
+    "조명 시스템 정상 작동 점검",
+    "바운딩 박스 크기 임계값 설정 확인",
+    "감지 신뢰도 수치 정상 범위 점검",
+    "시스템 응답 시간 측정 및 확인"
+  ],
+  "personal_protective_equipment": [
+    "안전모 (작업 구역 내 충격 방지)",
+    "안전화 (미끄럼 방지)",
+    "보안경 (광학 장비 사용 시)",
+    "정전기 방지복 (전자 장비 취급 시)",
+    "작업용 장갑 (부품 취급 시)"
+  ],
+  "automated_safety_systems": {
+    "detection_monitoring": "실시간 감지 결과 모니터링 및 이상 알림",
+    "quality_gate": "임계값 초과 시 자동 생산 중단",
+    "data_logging": "모든 감지 결과 자동 기록 및 보관",
+    "backup_verification": "이중 검증 시스템을 통한 오탐 방지"
+  },
+  "quality_based_safety_monitoring": {
+    "statistical_control": "바운딩 박스 크기 통계적 관리",
+    "trend_analysis": "감지 패턴 변화 추적 및 분석",
+    "predictive_alerts": "품질 저하 예측 기반 사전 경고"
+  },
+  "system_maintenance_safety": {
+    "scheduled_maintenance": [
+      "카메라 렌즈 청소 (일 2회)",
+      "조명 시스템 점검 (주 1회)",
+      "소프트웨어 업데이트 (월 1회)",
+      "하드웨어 상태 점검 (분기 1회)"
+    ],
+    "calibration_procedures": [
+      "감지 정확도 캘리브레이션 (주 1회)",
+      "바운딩 박스 크기 기준 재설정 (월 1회)",
+      "시스템 성능 벤치마크 (분기 1회)"
+    ]
+  },
+  "data_security_safety": {
+    "access_control": "권한 있는 인원만 시스템 접근 허용",
+    "data_backup": "모든 감지 데이터 정기 백업",
+    "audit_trail": "시스템 변경 사항 추적 및 기록",
+    "cybersecurity": "네트워크 보안 강화 및 모니터링"
+  },
+  "created_date": "2024-08-11",
+  "last_updated": "2024-08-11"
+}

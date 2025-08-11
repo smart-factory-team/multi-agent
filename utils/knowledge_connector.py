@@ -148,7 +148,7 @@ class KnowledgeConnector:
         # 장비 타입별 매핑
         type_mapping = {
             'press_hydraulic': 'press_hydraulic_manual.json',
-            'press_productivity': 'press_productivity_manual.json',
+            'press_hole_detection': 'press_hole_detection_manual.json',
             'welding_robot_kamp': 'welding_robot_kamp_manual.json',
             'painting_coating': 'painting_coating_manual.json',
             'painting_equipment': 'painting_equipment_manual.json', 

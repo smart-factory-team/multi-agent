@@ -358,74 +358,78 @@ EQUIPMENT_THRESHOLDS = {
         }
     },
 
-    "PRESS_PRODUCTIVITY": {
-        "PRESS_TIME": {
-            "Q1": 530,
-            "Q2": 550,
-            "Q3": 570,
-            "MEAN": 550.13,
-            "STD_DEV": 18.5,
-            "NORMAL_RANGE": (530, 570),
-            "WARNING_RANGE": (512, 588),
-            "CRITICAL_RANGE": (495, 605),
-            "UNIT": "ms",
-            "DESCRIPTION": "프레스 작업 사이클 시간"
+    "PRESS_HOLE_DETECTION": {
+        "BBOX_WIDTH": {
+            "Q1": 65.2,
+            "Q2": 155.39,
+            "Q3": 245.6,
+            "MEAN": 155.39,
+            "STD_DEV": 241.75,
+            "NORMAL_RANGE": (50, 300),
+            "WARNING_RANGE": (30, 400),
+            "CRITICAL_RANGE": (2, 500),
+            "MIN": 2.33,
+            "MAX": 1070.23,
+            "UNIT": "pixels",
+            "DESCRIPTION": "홀 바운딩 박스 폭"
         },
-        "FORMING_PRESSURE_1": {
-            "Q1": 262,
-            "Q2": 275,
-            "Q3": 288,
-            "MEAN": 275.07,
-            "STD_DEV": 12.3,
-            "NORMAL_RANGE": (262, 288),
-            "WARNING_RANGE": (250, 300),
-            "CRITICAL_RANGE": (238, 312),
-            "UNIT": "bar",
-            "DESCRIPTION": "주 성형 압력"
+        "BBOX_HEIGHT": {
+            "Q1": 68.1,
+            "Q2": 153.26,
+            "Q3": 238.4,
+            "MEAN": 153.26,
+            "STD_DEV": 288.81,
+            "NORMAL_RANGE": (50, 300),
+            "WARNING_RANGE": (30, 400),
+            "CRITICAL_RANGE": (4, 500),
+            "MIN": 4.19,
+            "MAX": 1062.53,
+            "UNIT": "pixels",
+            "DESCRIPTION": "홀 바운딩 박스 높이"
         },
-        "FORMING_PRESSURE_2": {
-            "Q1": 258,
-            "Q2": 270,
-            "Q3": 282,
-            "MEAN": 269.79,
-            "STD_DEV": 11.8,
-            "NORMAL_RANGE": (258, 282),
-            "WARNING_RANGE": (245, 295),
-            "CRITICAL_RANGE": (233, 307),
-            "UNIT": "bar",
-            "DESCRIPTION": "보조 성형 압력"
+        "BBOX_AREA": {
+            "Q1": 4500,
+            "Q2": 71515,
+            "Q3": 138530,
+            "MEAN": 71515,
+            "STD_DEV": 196102,
+            "NORMAL_RANGE": (2500, 150000),
+            "WARNING_RANGE": (500, 300000),
+            "CRITICAL_RANGE": (11, 1000000),
+            "MIN": 11.46,
+            "MAX": 1050891,
+            "UNIT": "pixels²",
+            "DESCRIPTION": "홀 바운딩 박스 면적"
         },
-        "BLANK_HOLDER_PRESSURE": {
-            "Q1": 520,
-            "Q2": 545,
-            "Q3": 570,
-            "MEAN": 544.85,
-            "STD_DEV": 25.2,
-            "NORMAL_RANGE": (520, 570),
-            "WARNING_RANGE": (490, 600),
-            "CRITICAL_RANGE": (470, 620),
-            "UNIT": "bar",
-            "DESCRIPTION": "블랭크 홀더 압력"
+        "HOLE_COUNT": {
+            "Q1": 1,
+            "Q2": 5,
+            "Q3": 12,
+            "NORMAL_RANGE": (1, 20),
+            "WARNING_RANGE": (0, 30),
+            "CRITICAL_MAX": 50,
+            "UNIT": "개",
+            "DESCRIPTION": "감지된 홀 개수"
         },
-        "DIE_CLEARANCE": {
-            "Q1": 0.05,
-            "Q2": 0.065,
-            "Q3": 0.08,
-            "NORMAL_RANGE": (0.05, 0.08),
-            "WARNING_RANGE": (0.03, 0.10),
-            "CRITICAL_RANGE": (0.02, 0.12),
-            "UNIT": "mm",
-            "DESCRIPTION": "다이 클리어런스 (재료 두께 대비 비율)"
+        "DETECTION_CONFIDENCE": {
+            "Q1": 0.75,
+            "Q2": 0.90,
+            "Q3": 0.98,
+            "NORMAL_RANGE": (0.8, 1.0),
+            "WARNING_RANGE": (0.6, 0.8),
+            "CRITICAL_MIN": 0.5,
+            "UNIT": "score",
+            "DESCRIPTION": "홀 감지 신뢰도"
         },
-        "DEFECT_RATE": {
-            "Q1": 0.5,
-            "Q2": 1.0,
-            "Q3": 2.0,
-            "NORMAL_RANGE": (0.0, 2.0),
-            "WARNING_MAX": 5.0,
-            "CRITICAL_MAX": 10.0,
+        "MISSING_HOLE_RATE": {
+            "Q1": 0.1,
+            "Q2": 0.5,
+            "Q3": 1.2,
+            "NORMAL_RANGE": (0.0, 1.0),
+            "WARNING_MAX": 3.0,
+            "CRITICAL_MAX": 5.0,
             "UNIT": "%",
-            "DESCRIPTION": "제품 결함률"
+            "DESCRIPTION": "홀 누락률"
         }
     },
 
@@ -661,7 +665,7 @@ EQUIPMENT_TRANSLATIONS = {
     "PRESS_HYDRAULIC": "프레스 유압시스템",
     "WELDING_ROBOT_KAMP": "용접 로봇 KAMP",
     "PAINTING_COATING": "도장포막 컬링 탐지",
-    "PRESS_PRODUCTIVITY": "프레스 생산성",
+    "PRESS_HOLE_DETECTION": "프레스 홀 감지",
     "PAINTING_EQUIPMENT": "도장설비 예지보전",
     "ASSEMBLY_PARTS": "조립 부품 품질관리"
 }

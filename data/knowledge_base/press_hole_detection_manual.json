@@ -1,0 +1,304 @@
+{
+  "equipment_type": "PRESS_HOLE_DETECTION",
+  "model": "홀 감지 시스템 HDS-2024",
+  "sections": [
+    {
+      "title": "홀 누락 감지 시스템 개요",
+      "content": "프레스 공정에서 발생하는 홀 누락을 실시간으로 감지하여 품질 불량을 방지하는 컴퓨터 비전 기반 검사 시스템입니다.",
+      "keywords": ["홀감지", "품질검사", "컴퓨터비전", "바운딩박스", "실시간모니터링"],
+      "subsections": [
+        {
+          "title": "단일 홀 누락 감지 (PRESS-HOLE-{SEVERITY}-{HOLE_CLASS}-MISSING-{DATETIME})",
+          "technical_details": {
+            "detection_mechanism": "바운딩 박스 크기 분석을 통한 홀 존재 여부 판단",
+            "critical_parameters": ["바운딩 박스 폭", "바운딩 박스 높이", "감지 신뢰도"],
+            "statistical_basis": [
+              "폭 평균: 155.39 pixels (표준편차: 241.75)",
+              "높이 평균: 153.26 pixels (표준편차: 288.81)",
+              "면적 평균: 71,515 pixels² (표준편차: 196,102)"
+            ]
+          },
+          "root_cause_analysis": {
+            "press_pressure_insufficient": {
+              "probability": 0.85,
+              "symptoms": "성형 압력 부족으로 홀 형성 불완전",
+              "detection_criteria": "바운딩 박스 크기 < 정상 하한선",
+              "resolution_time": "1-2시간"
+            },
+            "mold_wear": {
+              "probability": 0.75,
+              "symptoms": "금형 마모로 인한 홀 품질 저하",
+              "detection_criteria": "홀 윤곽 불규칙성 증가",
+              "resolution_time": "4-8시간"
+            },
+            "material_thickness_variation": {
+              "probability": 0.65,
+              "symptoms": "재료 두께 불균일로 성형 품질 변화",
+              "detection_criteria": "감지 신뢰도 < 0.8",
+              "resolution_time": "재료 교체 필요"
+            }
+          },
+          "solution_framework": [
+            {
+              "step": "프레스 압력 점검 및 설정 조정",
+              "technical_approach": "압력 센서 데이터 분석 후 최적값 설정",
+              "tools": ["압력 게이지", "조정 밸브"],
+              "validation": "테스트 샘플 10개로 검증"
+            },
+            {
+              "step": "금형 상태 확인 후 필요 시 교체",
+              "technical_approach": "마모도 측정 및 교체 기준 적용",
+              "criteria": "마모도 > 허용 한계 시 교체",
+              "downtime": "2-4시간"
+            }
+          ]
+        },
+        {
+          "title": "다중 홀 누락 감지 (PRESS-HOLE-{SEVERITY}-MULTI-MISSING-{DATETIME})",
+          "technical_details": {
+            "detection_mechanism": "다중 바운딩 박스 동시 분석을 통한 전체 패턴 감지",
+            "critical_indicators": "2개 이상 홀에서 동시 이상 감지",
+            "severity_classification": [
+              "경고: 2-3개 홀 누락",
+              "심각: 4-5개 홀 누락", 
+              "위험: 6개 이상 홀 누락"
+            ]
+          },
+          "system_level_analysis": {
+            "press_setting_abnormality": {
+              "probability": 0.95,
+              "symptoms": "전체 공정 파라미터 동시 이탈",
+              "detection_pattern": "다중 홀에서 일관된 불량 패턴",
+              "emergency_action": "전체 시스템 즉시 정지"
+            },
+            "synchronization_issue": {
+              "probability": 0.8,
+              "symptoms": "제어 시스템 타이밍 문제",
+              "detection_pattern": "홀별 감지 시점 불일치",
+              "resolution": "시스템 동기화 재설정"
+            }
+          },
+          "emergency_procedures": [
+            {
+              "action": "프레스 전체 설정 리셋",
+              "priority": "최우선",
+              "execution_time": "즉시",
+              "responsible": "시설 엔지니어"
+            },
+            {
+              "action": "긴급 기술진 투입",
+              "priority": "긴급",
+              "response_time": "30분 이내",
+              "escalation": "생산 관리자 → 공장장"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "바운딩 박스 통계 분석 및 품질 관리",
+      "content": "6,697개 바운딩 박스 데이터 분석을 통한 홀 감지 품질 관리 체계",
+      "keywords": ["통계분석", "품질관리", "바운딩박스", "크기분포"],
+      "statistical_framework": {
+        "data_collection": {
+          "total_samples": 6697,
+          "collection_period": "2024년 1월~8월",
+          "sampling_method": "전수 검사 기반 실시간 수집",
+          "data_quality": "완전성 99.8%, 정확성 95.2%"
+        },
+        "size_distribution_analysis": [
+          {
+            "parameter": "Bounding Box Width",
+            "statistical_properties": {
+              "mean": 155.39,
+              "std_dev": 241.75,
+              "cv": 1.556,
+              "min": 2.33,
+              "max": 1070.23,
+              "distribution_type": "右편향 분포"
+            },
+            "quality_control_limits": {
+              "lower_control_limit": "50 pixels",
+              "upper_control_limit": "300 pixels",
+              "warning_threshold": "±2σ",
+              "action_threshold": "±3σ"
+            }
+          },
+          {
+            "parameter": "Bounding Box Height",
+            "statistical_properties": {
+              "mean": 153.26,
+              "std_dev": 288.81,
+              "cv": 1.884,
+              "min": 4.19,
+              "max": 1062.53,
+              "distribution_type": "右편향 분포"
+            },
+            "correlation_analysis": "폭과 높이 상관계수: 0.73"
+          },
+          {
+            "parameter": "Bounding Box Area",
+            "statistical_properties": {
+              "mean": 71515,
+              "std_dev": 196102,
+              "cv": 2.743,
+              "min": 11.46,
+              "max": 1050891,
+              "distribution_type": "극심한 右편향 분포"
+            },
+            "process_capability": {
+              "cpk": 0.85,
+              "interpretation": "공정 능력 개선 필요",
+              "target_cpk": "> 1.33"
+            }
+          }
+        ]
+      },
+      "variation_analysis": {
+        "high_variation_implications": [
+          "크기 편차가 매우 클수록 감지 알고리즘의 임계값 설정 어려움",
+          "표준편차가 평균보다 큰 경우 품질 예측 신뢰도 저하",
+          "극단값(outlier) 존재로 인한 시스템 오탐 위험 증가"
+        ],
+        "improvement_strategies": [
+          "적응형 임계값 설정 알고리즘 도입",
+          "크기별 분류 모델 구축",
+          "극단값 필터링 로직 강화"
+        ]
+      }
+    },
+    {
+      "title": "감지 시스템 최적화 및 성능 향상",
+      "content": "머신러닝과 통계 분석을 결합한 지능형 홀 감지 시스템",
+      "keywords": ["최적화", "머신러닝", "성능향상", "정확도"],
+      "optimization_approaches": [
+        {
+          "approach": "적응형 바운딩 박스 분석",
+          "implementation": [
+            "실시간 크기 분포 학습",
+            "동적 임계값 조정",
+            "상황별 감지 모델 전환"
+          ],
+          "technical_details": {
+            "algorithm": "Gaussian Mixture Model + Dynamic Thresholding",
+            "update_frequency": "매 100 샘플마다",
+            "performance_gain": "감지 정확도 15% 향상"
+          }
+        },
+        {
+          "approach": "다단계 검증 시스템",
+          "implementation": [
+            "1단계: 기본 바운딩 박스 분석",
+            "2단계: 통계적 이상치 검출",
+            "3단계: 패턴 매칭 검증"
+          ],
+          "validation_criteria": {
+            "stage1_threshold": "크기 범위 기본 검증",
+            "stage2_threshold": "통계적 신뢰구간 95%",
+            "stage3_threshold": "패턴 유사도 > 0.85"
+          }
+        }
+      ],
+      "performance_metrics": [
+        {
+          "metric": "Detection Accuracy",
+          "current": "92.0%",
+          "target": "96.0%",
+          "improvement_plan": [
+            "알고리즘 정밀도 향상",
+            "학습 데이터 품질 개선",
+            "하드웨어 성능 업그레이드"
+          ]
+        },
+        {
+          "metric": "False Positive Rate",
+          "current": "5.0%",
+          "target": "< 2.0%",
+          "root_causes": [
+            "조명 변화에 따른 오감지",
+            "재료 표면 반사 영향",
+            "임계값 설정 부적절"
+          ]
+        },
+        {
+          "metric": "System Response Time",
+          "current": "150ms",
+          "target": "< 100ms",
+          "optimization_areas": [
+            "이미지 처리 알고리즘 최적화",
+            "하드웨어 가속 적용",
+            "병렬 처리 구조 개선"
+          ]
+        }
+      ]
+    }
+  ],
+  "maintenance_schedule": {
+    "daily": [
+      "바운딩 박스 크기 통계 모니터링",
+      "감지 정확도 실시간 확인",
+      "시스템 응답 시간 측정",
+      "오탐/미탐 사례 기록"
+    ],
+    "weekly": [
+      "카메라 렌즈 청소 및 점검",
+      "조명 시스템 상태 확인",
+      "임계값 설정 검토",
+      "성능 지표 분석"
+    ],
+    "monthly": [
+      "감지 모델 재학습",
+      "통계적 관리 차트 업데이트",
+      "시스템 벤치마크 테스트",
+      "하드웨어 상태 점검"
+    ],
+    "quarterly": [
+      "전체 시스템 성능 평가",
+      "알고리즘 업그레이드 검토",
+      "ROI 분석 및 개선 계획",
+      "확장성 검토 및 계획 수립"
+    ]
+  },
+  "technical_specifications": {
+    "detection_range": "최소 2×4 pixels ~ 최대 1070×1062 pixels",
+    "processing_speed": "< 150ms per frame",
+    "accuracy_target": "> 96%",
+    "false_positive_target": "< 2%",
+    "operating_environment": "온도 10-40°C, 습도 30-70%"
+  },
+  "integration_guidelines": [
+    "기존 프레스 제어 시스템과 API 연동",
+    "품질 관리 시스템과 데이터 동기화",
+    "MES 시스템과 실시간 정보 공유",
+    "알람 시스템과 비상 대응 연계"
+  ],
+  "troubleshooting_guide": {
+    "common_issues": [
+      {
+        "issue": "감지 정확도 급격한 저하",
+        "symptoms": ["오탐률 증가", "신뢰도 점수 하락"],
+        "solutions": ["렌즈 청소", "조명 점검", "모델 재학습"]
+      },
+      {
+        "issue": "시스템 응답 지연",
+        "symptoms": ["처리 시간 증가", "실시간성 저하"],
+        "solutions": ["하드웨어 점검", "네트워크 상태 확인", "프로세스 최적화"]
+      }
+    ]
+  },
+  "quality_standards": {
+    "detection_criteria": {
+      "minimum_bbox_size": "폭 > 30, 높이 > 30 pixels",
+      "maximum_bbox_size": "폭 < 500, 높이 < 500 pixels",
+      "confidence_threshold": "> 0.8",
+      "aspect_ratio_range": "0.5 ~ 2.0"
+    },
+    "validation_methods": {
+      "automated_testing": "테스트 이미지 세트 100장으로 일일 검증",
+      "manual_inspection": "무작위 샘플 20개 수동 확인",
+      "statistical_monitoring": "관리 차트 기반 공정 관리"
+    }
+  },
+  "created_date": "2024-08-11",
+  "last_updated": "2024-08-11"
+}
