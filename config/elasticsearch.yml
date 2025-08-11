@@ -1,0 +1,78 @@
+# ==========================================
+# Smart Factory Elasticsearch 설정 파일
+# ==========================================
+
+# 클러스터 설정
+cluster.name: smartfactory-cluster
+node.name: smartfactory-node-1
+
+# 네트워크 설정
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# 노드 역할 설정
+node.roles: [ master, data, data_content, data_hot, data_warm, data_cold, ingest, ml, remote_cluster_client, transform ]
+
+# 디스커버리 설정 (단일 노드)
+discovery.type: single-node
+
+# 경로 설정
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# 메모리 설정
+bootstrap.memory_lock: false
+
+# 보안 설정 (개발환경)
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+# 모니터링 설정
+xpack.monitoring.collection.enabled: true
+
+# 라이센스 설정
+xpack.license.self_generated.type: basic
+
+# HTTP 설정
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-headers: "X-Requested-With,Content-Type,Content-Length,Authorization"
+
+# 인덱스 설정
+action.auto_create_index: true
+action.destructive_requires_name: false
+
+# 로깅 설정
+logger.org.elasticsearch.deprecation: warn
+
+# JVM 힙 크기 제한 (Docker 환경)
+# -Xms1g -Xmx1g 는 docker-compose.yaml에서 설정
+
+# 스마트 팩토리 전용 설정
+
+# 검색 성능 최적화
+search.max_buckets: 65536
+indices.query.bool.max_clause_count: 4096
+
+# 캐시 설정
+indices.fielddata.cache.size: 40%
+indices.requests.cache.size: 2%
+
+# 스크립트 설정
+script.painless.regex.enabled: true
+script.painless.regex.limit-factor: 6
+
+# 집계 최적화
+search.max_async_search_response_size: 10mb
+
+# 스레드풀 설정
+thread_pool.search.size: 4
+thread_pool.search.queue_size: 1000
+thread_pool.write.size: 4
+thread_pool.write.queue_size: 200
+
+# 인덱스 레벨 설정은 템플릿으로 별도 관리
+# (index.* 설정들은 elasticsearch.yml이 아닌 인덱스 템플릿에서 설정)
