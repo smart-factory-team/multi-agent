@@ -1,0 +1,257 @@
+{
+  "equipment_type": "PRESS_HOLE_DETECTION",
+  "category": "홀 누락 감지 및 품질 관리",
+  "cases": [
+    {
+      "case_id": "PRESS_HOLE_001",
+      "title": "단일 홀 누락 감지 문제 해결",
+      "issue_code": "PRESS-HOLE-{SEVERITY}-{HOLE_CLASS}-MISSING-{DATETIME}",
+      "description": "단일 hole 누락 감지 문제로, 주된 발생 원인은 프레스 압력 부족, 금형 마모, 재료 두께 불균일입니다.",
+      "symptoms": [
+        "홀 감지 시스템에서 누락 알림",
+        "바운딩 박스 크기 이상",
+        "감지 신뢰도 저하",
+        "제품 품질 검사 불합격"
+      ],
+      "root_causes": [
+        {
+          "cause": "프레스 압력 부족",
+          "probability": 0.85,
+          "evidence": ["압력 센서 데이터 분석", "성형 품질 저하"],
+          "fix_time": "1-2시간"
+        },
+        {
+          "cause": "금형 마모",
+          "probability": 0.75,
+          "evidence": ["금형 표면 상태 검사", "홀 형상 불량"],
+          "fix_time": "4-8시간"
+        },
+        {
+          "cause": "재료 두께 불균일",
+          "probability": 0.65,
+          "evidence": ["재료 두께 측정 결과", "품질 검사 데이터"],
+          "fix_time": "재료 교체 필요"
+        }
+      ],
+      "solution_steps": [
+        {
+          "step": 1,
+          "action": "프레스 압력 점검 및 설정 조정",
+          "details": "압력 센서를 통해 현재 압력 확인 후 표준 값으로 조정",
+          "time_required": "30분-1시간",
+          "tools_required": ["압력 게이지", "조정 밸브"]
+        },
+        {
+          "step": 2,
+          "action": "금형 상태 확인 후 필요 시 금형 교체",
+          "details": "금형 마모 상태 점검 및 교체 여부 결정",
+          "time_required": "2-4시간",
+          "parts_needed": ["교체용 금형", "고정 볼트"]
+        },
+        {
+          "step": 3,
+          "action": "재료 두께 측정 및 품질 확인",
+          "details": "재료 두께 균일성 검사 및 품질 기준 확인",
+          "time_required": "30분-1시간",
+          "tools_required": ["두께 측정기", "품질 검사 장비"]
+        },
+        {
+          "step": 4,
+          "action": "생산 일시 중단 검토",
+          "details": "문제 해결까지 생산 중단 필요성 검토",
+          "time_required": "즉시",
+          "specialist_required": true
+        }
+      ],
+      "prevention": [
+        "프레스 압력 정기 모니터링 (시간당 1회)",
+        "금형 상태 일일 점검",
+        "재료 입고 시 두께 검사 실시",
+        "홀 감지 시스템 정기 캘리브레이션"
+      ],
+      "cost_estimate": {
+        "parts": "300,000원",
+        "labor": "800,000원",
+        "downtime": "500,000원",
+        "total": "1,600,000원"
+      },
+      "success_rate": 0.90,
+      "last_updated": "2024-08-11"
+    },
+    {
+      "case_id": "PRESS_HOLE_002",
+      "title": "다중 홀 누락 감지 문제 해결",
+      "issue_code": "PRESS-HOLE-{SEVERITY}-MULTI-MISSING-{DATETIME}",
+      "description": "다중 hole 누락 감지 문제로, 이는 프레스 설정 이상으로 인한 다중 hole 불량이 원인입니다.",
+      "symptoms": [
+        "여러 홀에서 동시 누락 발생",
+        "감지 시스템 다중 알람",
+        "생산 라인 전체 품질 저하",
+        "바운딩 박스 면적 급격한 변화"
+      ],
+      "root_causes": [
+        {
+          "cause": "프레스 설정 이상",
+          "probability": 0.95,
+          "evidence": ["전체 공정 파라미터 이상", "다중 홀 불량 패턴"],
+          "fix_time": "2-4시간"
+        },
+        {
+          "cause": "시스템 동기화 문제",
+          "probability": 0.8,
+          "evidence": ["타이밍 분석 결과", "제어 시스템 로그"],
+          "fix_time": "1-3시간"
+        },
+        {
+          "cause": "금형 정렬 불량",
+          "probability": 0.7,
+          "evidence": ["정렬 상태 검사", "홀 위치 편차 측정"],
+          "fix_time": "3-5시간"
+        }
+      ],
+      "solution_steps": [
+        {
+          "step": 1,
+          "action": "프레스 전체 설정 리셋",
+          "details": "모든 프레스 파라미터를 기본값으로 초기화 후 재설정",
+          "time_required": "1-2시간",
+          "tools_required": ["제어 패널", "설정 매뉴얼"]
+        },
+        {
+          "step": 2,
+          "action": "긴급 점검 요청",
+          "details": "전문 기술자에 의한 전체 시스템 긴급 점검",
+          "time_required": "2-4시간",
+          "specialist_required": true
+        },
+        {
+          "step": 3,
+          "action": "생산 일시 중단 검토",
+          "details": "문제 해결까지 전체 생산 라인 중단 검토",
+          "time_required": "즉시",
+          "specialist_required": true
+        }
+      ],
+      "prevention": [
+        "프레스 설정 자동 백업 시스템 구축",
+        "실시간 다중 홀 모니터링 강화",
+        "예방 정비 주기 단축 (주 1회)",
+        "시스템 동기화 상태 정기 점검"
+      ],
+      "cost_estimate": {
+        "parts": "1,000,000원",
+        "labor": "2,000,000원",
+        "downtime": "3,000,000원",
+        "total": "6,000,000원"
+      },
+      "success_rate": 0.85,
+      "last_updated": "2024-08-11"
+    }
+  ],
+  "statistical_analysis": {
+    "bbox_statistics": {
+      "total_samples": 6697,
+      "data_collection_period": "2024년 1월~8월",
+      "analysis_method": "바운딩 박스 크기 분포 분석"
+    },
+    "key_parameters": [
+      {
+        "parameter": "BBox Width",
+        "unit": "pixels",
+        "mean": 155.39,
+        "std_dev": 241.75,
+        "min": 2.33,
+        "max": 1070.23,
+        "operating_range": "50-300 pixels",
+        "description": "홀 바운딩 박스 폭"
+      },
+      {
+        "parameter": "BBox Height", 
+        "unit": "pixels",
+        "mean": 153.26,
+        "std_dev": 288.81,
+        "min": 4.19,
+        "max": 1062.53,
+        "operating_range": "50-300 pixels",
+        "description": "홀 바운딩 박스 높이"
+      },
+      {
+        "parameter": "BBox Area",
+        "unit": "pixels²",
+        "mean": 71515,
+        "std_dev": 196102,
+        "min": 11.46,
+        "max": 1050891,
+        "operating_range": "2500-150000 pixels²",
+        "description": "홀 바운딩 박스 면적"
+      }
+    ],
+    "size_distribution_analysis": {
+      "variation_coefficient": {
+        "width": 1.556,
+        "height": 1.884,
+        "area": 2.743
+      },
+      "distribution_characteristics": "크기 변동이 매우 큰 분포를 보임",
+      "quality_implications": "크기 편차가 클수록 감지 정확도 저하 위험"
+    }
+  },
+  "predictive_maintenance": {
+    "early_warning_indicators": [
+      {
+        "parameter": "바운딩 박스 크기 편차 증가",
+        "threshold": "표준편차 > 300",
+        "action": "감지 시스템 캘리브레이션"
+      },
+      {
+        "parameter": "감지 신뢰도 저하",
+        "threshold": "confidence < 0.8",
+        "action": "모델 재학습 필요"
+      },
+      {
+        "parameter": "홀 누락률 증가",
+        "threshold": "누락률 > 2%",
+        "action": "긴급 시스템 점검"
+      }
+    ],
+    "maintenance_recommendations": [
+      "감지 모델 정확도 주간 점검",
+      "바운딩 박스 통계 분석 (일 1회)",
+      "시스템 성능 지표 모니터링 (실시간)",
+      "하드웨어 상태 정기 점검 (월 1회)"
+    ]
+  },
+  "quality_improvement_strategies": [
+    {
+      "strategy": "적응형 감지 시스템 구축",
+      "implementation": [
+        "실시간 바운딩 박스 크기 적응",
+        "동적 임계값 조정",
+        "머신러닝 기반 이상 감지"
+      ],
+      "expected_improvement": "감지 정확도 25% 향상"
+    },
+    {
+      "strategy": "다단계 검증 시스템 도입",
+      "implementation": [
+        "1차 자동 감지",
+        "2차 통계적 검증", 
+        "3차 인간 검수"
+      ],
+      "expected_improvement": "오탐률 50% 감소"
+    }
+  ],
+  "summary_statistics": {
+    "total_cases": 2,
+    "average_success_rate": 0.875,
+    "average_fix_time": "2-6시간",
+    "common_issues": ["단일 홀 누락", "다중 홀 누락", "감지 시스템 오류"]
+  },
+  "quality_metrics": {
+    "detection_accuracy": "92%",
+    "false_positive_rate": "5%",
+    "system_uptime": "98.5%"
+  },
+  "created_date": "2024-08-11",
+  "last_updated": "2024-08-11"
+}

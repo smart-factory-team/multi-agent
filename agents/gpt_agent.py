@@ -249,7 +249,7 @@ class GPTAgent(BaseAgent):
             equipment_type = None
             equipment_keywords = {
                 'PRESS_HYDRAULIC': ['유압', '프레스', 'press', 'hydraulic'],
-                'PRESS_PRODUCTIVITY': ['생산성', 'productivity', '프레스'],
+                'PRESS_HOLE_DETECTION': ['홀', 'hole', '구멍', '누락', 'missing', '감지', 'detection'],
                 'WELDING_ROBOT_KAMP': ['용접', '로봇', 'welding', 'robot', 'kamp'],
                 'PAINTING_COATING': ['도장', '코팅', 'painting', 'coating'],
                 'PAINTING_EQUIPMENT': ['도장장비', 'painting equipment'],
