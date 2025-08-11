@@ -1,76 +1,42 @@
 """Utility modules for the chatbot system."""
 
-from .llm_clients import (
-    OpenAIClient,
-    GeminiClient,
-    ClovaClient,
-    AnthropicClient,
-    LLMResponse,
-    LLMError,
-    get_llm_client
-)
+# 순환 import 방지를 위해 필요한 것만 lazy import
+# 실제 사용시에는 직접 import 권장: from utils.pdf_generator import generate_session_report
 
-from .rag_engines import (
-    ChromaEngine,
-    ElasticsearchEngine,
-    RAGResult,
-    HybridRAGEngine
-)
+# 기본적인 유틸리티만 export
+try:
+    from .exceptions import (
+        ChatbotError,
+        AgentError,
+        APIError,
+        ConfigError,
+        ValidationError
+    )
+except ImportError:
+    # 의존성이 없어도 기본 동작 가능하도록
+    class ChatbotError(Exception): pass
+    class AgentError(Exception): pass
+    class APIError(Exception): pass
+    class ConfigError(Exception): pass
+    class ValidationError(Exception): pass
 
-from .validators import (
-    RequestValidator,
-    InputSanitizer,
-    SecurityValidator,
-    ValidationError
-)
-
-from .database import (
-    DatabaseManager,
-    get_database_connection,
-    execute_query,
-    get_equipment_data,
-    save_chat_session
-)
-
-from .logging_config import (
-    setup_logging,
-    get_logger,
-    log_performance,
-    LogLevel
-)
+# 기본 로깅 설정은 항상 가능하도록
+try:
+    from .logging_config import setup_logging, get_logger
+except ImportError:
+    import logging
+    def setup_logging(): return logging.getLogger()
+    def get_logger(name): return logging.getLogger(name)
 
 __all__ = [
-    # LLM Clients
-    'OpenAIClient',
-    'GeminiClient',
-    'ClovaClient',
-    'AnthropicClient',
-    'LLMResponse',
-    'LLMError',
-    'get_llm_client',
-
-    # RAG Engines
-    'ChromaEngine',
-    'ElasticsearchEngine',
-    'RAGResult',
-    'HybridRAGEngine',
-
-    # Validators
-    'RequestValidator',
-    'InputSanitizer',
-    'SecurityValidator',
+    # Exceptions
+    'ChatbotError',
+    'AgentError', 
+    'APIError',
+    'ConfigError',
     'ValidationError',
-
-    # Database (실제 DB 연결/쿼리용)
-    'DatabaseManager',
-    'get_database_connection',
-    'execute_query',
-    'get_equipment_data',
-    'save_chat_session',
-
+    
     # Logging
     'setup_logging',
-    'get_logger',
-    'log_performance',
-    'LogLevel'
+    'get_logger'
 ]
