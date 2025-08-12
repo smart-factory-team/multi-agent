@@ -7,7 +7,6 @@ from sqlalchemy.orm import sessionmaker
 
 from config.settings import DATABASE_URL, settings
 
-
 class DatabaseManager:
     def __init__(self):
         self.connection_pool = None
