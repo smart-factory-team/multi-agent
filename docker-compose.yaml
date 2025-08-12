@@ -28,6 +28,9 @@ services:
       - CHROMA_PORT=8000
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
+      - KAFKA_ENABLED=true
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - KAFKA_CONSUMER_GROUP=smart_factory_group
       - PYTHONPATH=/app
       - ENVIRONMENT=production
     volumes:
