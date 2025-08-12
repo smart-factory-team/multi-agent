@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smart-factory-config
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${APP_NAME}
+data:
+  # Application Configuration
+  ENVIRONMENT: "production"
+  DEBUG: "false"
+  LOG_LEVEL: "INFO"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  
+  # CORS Settings
+  ALLOWED_ORIGINS: "*"
+  
+  # Database Configuration (non-sensitive)
+  MYSQL_DATABASE: "multichat"
+  MYSQL_USER: "root"
+  
+  # Redis Configuration
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # Kafka Configuration
+  KAFKA_CONSUMER_GROUP: "smart_factory_group"
+  KAFKA_AUTO_OFFSET_RESET: "earliest"
+  KAFKA_ENABLED: "true"
+  
+  # File Storage Paths
+  DATA_PATH: "/app/data"
+  EMBEDDINGS_PATH: "/app/data/embeddings"
+  CHROMADB_PATH: "/app/data/embeddings/chromadb"
+  UPLOAD_PATH: "/app/uploads"
+  LOG_PATH: "/app/logs"
+  
+  # Feature Flags
+  ENABLE_HOLE_DETECTION: "true"
+  ENABLE_KAFKA_CONSUMER: "true"
+  ENABLE_PDF_GENERATION: "true"
+  ENABLE_METRICS: "true"
+  ENABLE_HEALTH_CHECKS: "true"
+  
+  # Performance Settings
+  DB_POOL_SIZE: "5"
+  DB_MAX_OVERFLOW: "10"
+  REDIS_CONNECTION_POOL_SIZE: "10"
+  MAX_REQUEST_SIZE: "10MB"
+  REQUEST_TIMEOUT: "30"
+  RATE_LIMIT_PER_MINUTE: "100"
+  
+  # Worker Settings
+  WORKER_PROCESSES: "4"
+  WORKER_CONNECTIONS: "1000"
+  
+  # Health Check Settings
+  HEALTH_CHECK_INTERVAL: "30"
+  STARTUP_TIMEOUT: "300"
+  
+  # Monitoring Settings
+  METRICS_ENABLED: "true"
+  METRICS_PORT: "9090"
+  
+  # Backup Settings
+  BACKUP_ENABLED: "false"
+  BACKUP_RETENTION_DAYS: "30"
+  
+  # Nginx Configuration
+  nginx.conf: |
+    upstream backend {
+        server 127.0.0.1:8000;
+    }
+    
+    server {
+        listen 80;
+        server_name _;
+        client_max_body_size 10M;
+        
+        # Health check endpoint
+        location /nginx-health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+        
+        # Proxy all requests to FastAPI backend
+        location / {
+            proxy_pass http://backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+            
+            # Buffer settings
+            proxy_buffering on;
+            proxy_buffer_size 128k;
+            proxy_buffers 4 256k;
+            proxy_busy_buffers_size 256k;
+        }
+        
+        # Static files (if any)
+        location /static/ {
+            alias /app/static/;
+            expires 30d;
+            add_header Cache-Control "public, immutable";
+        }
+    }

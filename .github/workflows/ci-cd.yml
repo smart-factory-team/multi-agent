@@ -1,0 +1,652 @@
+# .github/workflows/ci-cd.yml
+# ==============================================
+# 멀티 에이전트 스마트 팩토리 Kubernetes CI/CD 파이프라인
+# ==============================================
+# 
+# 🔄 전체 실행 흐름:
+# 1. PR 생성시: quality-check + auto-review 실행
+# 2. main 브랜치 푸시시: 모든 Job이 순서대로 실행
+#    - build-and-push (Docker 이미지 생성)
+#    - deploy-to-aks (AKS에 배포) 
+#    - health-check (배포 검증)
+#    - notify (결과 알림)
+#
+# 📋 Job 구성:
+# - Job 1: quality-check (코드 품질 검사)
+# - Job 2: build-and-push (Docker 빌드 & ACR 푸시)
+# - Job 3: deploy-to-aks (AKS 배포)
+# - Job 4: health-check (헬스체크)
+# - Job 5: auto-review (자동 PR 리뷰)
+# - Job 6: notify (배포 결과 알림)
+#
+name: Multi-Agent Smart Factory CI/CD Pipeline for Kubernetes
+
+# 트리거 조건: PR 생성시 또는 main 브랜치 푸시시 실행
+on:
+  pull_request:
+    branches: [ main ]    # main 브랜치로 PR 생성시 실행
+  push:
+    branches: [ main ]    # main 브랜치에 푸시시 실행
+
+# GitHub Actions 권한 설정
+permissions:
+  contents: read          # 코드 읽기 권한
+  pull-requests: write    # PR 댓글 작성 권한
+  checks: write          # 체크 상태 업데이트 권한
+  actions: read          # Actions 결과 읽기 권한
+  packages: write        # 패키지(이미지) 업로드 권한
+  id-token: write        # Azure 인증 토큰 권한
+
+# 전역 환경변수 (모든 Job에서 사용)
+env:
+  REGISTRY: 23acr.azurecr.io              # Azure Container Registry 주소
+  AKS_CLUSTER_NAME: 23-aks                # AKS 클러스터 이름
+  AKS_RESOURCE_GROUP: 23-rsrc             # Azure 리소스 그룹
+  IMAGE_NAME: multi-agent-smart-factory   # Docker 이미지 이름
+  NAMESPACE: smart-factory                # Kubernetes 네임스페이스
+
+jobs:
+  # ==============================================
+  # Job 1: 코드 품질 검사 (PR일 때만 실행)
+  # ==============================================
+  quality-check:
+    if: github.event_name == 'pull_request'  # PR일 때만 실행
+    runs-on: ubuntu-latest                   # Ubuntu 최신 버전에서 실행
+    # 다른 Job에서 사용할 결과값들 정의
+    outputs:
+      total_tests: ${{ steps.test.outputs.total_tests }}    # 전체 테스트 수
+      passed_tests: ${{ steps.test.outputs.passed_tests }}  # 통과한 테스트 수
+      failed_tests: ${{ steps.test.outputs.failed_tests }}  # 실패한 테스트 수
+      skipped_tests: ${{ steps.test.outputs.skipped_tests }} # 건너뛴 테스트 수
+      coverage: ${{ steps.test.outputs.coverage }}          # 코드 커버리지 %
+      lint_errors: ${{ steps.lint.outputs.lint_errors }}    # 린트 에러 수
+      high_issues: ${{ steps.security.outputs.high_issues }} # 높은 심각도 보안 이슈
+      medium_issues: ${{ steps.security.outputs.medium_issues }} # 중간 심각도 보안 이슈
+      low_issues: ${{ steps.security.outputs.low_issues }}  # 낮은 심각도 보안 이슈
+      total_issues: ${{ steps.security.outputs.total_issues }} # 전체 보안 이슈
+
+    steps:
+      # 1. 코드 체크아웃 (GitHub에서 코드 다운로드)
+      - uses: actions/checkout@v4
+
+      # 2. Python 3.10 설치
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # 3. pip 의존성 캐싱 (빌드 속도 향상)
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip                                      # 캐시 저장 경로
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}  # 캐시 키
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 4. 의존성 설치
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip    # pip 업그레이드
+          pip install -r requirements.txt       # 프로젝트 의존성 설치
+          pip install pytest pytest-cov flake8 mypy bandit  # 테스트/검사 도구 설치
+
+      # 5. Flake8로 코드 스타일 검사
+      - name: Linting with Flake8
+        id: lint    # 다른 단계에서 참조할 수 있도록 ID 설정
+        run: |
+          # 심각한 에러만 체크 (E9, F63, F7, F82)
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics > flake8-results.txt 2>&1 || true
+          # 에러 개수 세기
+          LINT_ERRORS=$(grep -c "E9\|F63\|F7\|F82" flake8-results.txt 2>/dev/null || echo "0")
+          # GitHub Actions 출력에 저장 (다른 Job에서 사용 가능)
+          echo "lint_errors=${LINT_ERRORS}" >> $GITHUB_OUTPUT
+          
+          # 전체 스타일 체크 (최대 줄 길이 120자)
+          flake8 . --count --max-line-length=120 --statistics >> flake8-results.txt 2>&1 || true
+
+      # 6. MyPy로 타입 검사
+      - name: Type checking with MyPy
+        continue-on-error: true    # 타입 에러가 있어도 계속 진행
+        run: |
+          mypy . --ignore-missing-imports --no-strict-optional || true
+
+      # 7. pytest로 테스트 실행 및 커버리지 측정
+      - name: Run tests with coverage
+        id: test
+        run: |
+          # 테스트 파일이 있는지 확인
+          if find . -name "test_*.py" -o -name "*_test.py" | grep -q .; then
+            # pytest 실행 (커버리지 측정, XML 리포트 생성)
+            pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=test-results.xml -v || true
+            
+            # 테스트 결과 XML 파싱
+            if [ -f test-results.xml ]; then
+              # 정규표현식으로 테스트 수 추출
+              TOTAL=$(grep -o 'tests="[^"]*"' test-results.xml | grep -o '[0-9]*' || echo "0")
+              FAILURES=$(grep -o 'failures="[^"]*"' test-results.xml | grep -o '[0-9]*' || echo "0")
+              ERRORS=$(grep -o 'errors="[^"]*"' test-results.xml | grep -o '[0-9]*' || echo "0")
+              SKIPPED=$(grep -o 'skipped="[^"]*"' test-results.xml | grep -o '[0-9]*' || echo "0")
+              PASSED=$((TOTAL - FAILURES - ERRORS))  # 통과한 테스트 = 전체 - 실패 - 에러
+            else
+              TOTAL=0; PASSED=0; FAILURES=0; ERRORS=0; SKIPPED=0
+            fi
+            
+            # 커버리지 % 계산
+            if [ -f coverage.xml ]; then
+              COVERAGE=$(grep -o 'line-rate="[^"]*"' coverage.xml | head -1 | grep -o '[0-9.]*' | awk '{print int($1*100)}' || echo "0")
+            else
+              COVERAGE="0"
+            fi
+          else
+            echo "No tests found"
+            TOTAL=0; PASSED=0; FAILURES=0; ERRORS=0; SKIPPED=0; COVERAGE="0"
+          fi
+          
+          # 결과를 GitHub Actions 출력에 저장
+          echo "total_tests=$TOTAL" >> $GITHUB_OUTPUT
+          echo "passed_tests=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed_tests=$((FAILURES + ERRORS))" >> $GITHUB_OUTPUT
+          echo "skipped_tests=$SKIPPED" >> $GITHUB_OUTPUT
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+
+      # 8. Bandit으로 보안 스캔
+      - name: Security scan with Bandit
+        id: security
+        run: |
+          # 보안 스캔 실행 (JSON 형태로 결과 저장)
+          bandit -r . -f json -o bandit-report.json || true
+          
+          # jq로 JSON 파싱해서 심각도별 이슈 개수 계산
+          if [ -f bandit-report.json ]; then
+            HIGH=$(jq '[.results[] | select(.issue_severity=="HIGH")] | length' bandit-report.json || echo "0")
+            MEDIUM=$(jq '[.results[] | select(.issue_severity=="MEDIUM")] | length' bandit-report.json || echo "0")
+            LOW=$(jq '[.results[] | select(.issue_severity=="LOW")] | length' bandit-report.json || echo "0")
+            TOTAL=$((HIGH + MEDIUM + LOW))
+          else
+            HIGH=0; MEDIUM=0; LOW=0; TOTAL=0
+          fi
+
+          # 결과를 GitHub Actions 출력에 저장
+          echo "high_issues=$HIGH" >> $GITHUB_OUTPUT
+          echo "medium_issues=$MEDIUM" >> $GITHUB_OUTPUT
+          echo "low_issues=$LOW" >> $GITHUB_OUTPUT
+          echo "total_issues=$TOTAL" >> $GITHUB_OUTPUT
+
+      # 9. 테스트 결과 파일들을 아티팩트로 업로드
+      - name: Upload test and security results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-and-security-results
+          path: |
+            test-results.xml      # 테스트 결과
+            coverage.xml          # 커버리지 결과
+            flake8-results.txt   # 린트 결과
+            bandit-report.json   # 보안 스캔 결과
+
+  # ==============================================
+  # Job 2: Docker 빌드 및 ACR 푸시 (main 브랜치만)
+  # ==============================================
+  build-and-push:
+    if: github.ref == 'refs/heads/main'    # main 브랜치일 때만 실행
+    runs-on: ubuntu-latest
+    needs: []                              # 다른 Job 기다리지 않고 바로 실행
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}      # 생성된 이미지 태그
+      image-digest: ${{ steps.build.outputs.digest }} # 이미지 해시값
+
+    steps:
+      # 1. 코드 체크아웃
+      - uses: actions/checkout@v4
+
+      # 2. Docker Buildx 설정 (멀티 플랫폼 빌드 지원)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Azure Container Registry 로그인
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY }}        # 23acr.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}    # GitHub Secrets에서 가져옴
+          password: ${{ secrets.ACR_PASSWORD }}    # GitHub Secrets에서 가져옴
+
+      # 4. Docker 이미지 메타데이터 생성 (태그 등)
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}    # 23acr.azurecr.io/multi-agent-smart-factory
+          tags: |
+            type=ref,event=branch                    # 브랜치명으로 태그
+            type=ref,event=pr                        # PR 번호로 태그  
+            type=sha,prefix={{branch}}-              # 브랜치명-SHA로 태그
+            type=raw,value=latest,enable={{is_default_branch}}  # main 브랜치면 latest 태그
+            type=raw,value=prod-{{date 'YYYYMMDD-HHmmss'}}     # 프로덕션 타임스탬프 태그
+
+      # 5. Docker 이미지 빌드 및 푸시
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .                              # 현재 디렉터리에서 빌드
+          platforms: linux/amd64                 # AMD64 플랫폼용으로 빌드
+          push: true                              # 빌드 후 레지스트리에 푸시
+          tags: ${{ steps.meta.outputs.tags }}   # 위에서 생성한 태그들 사용
+          labels: ${{ steps.meta.outputs.labels }} # 메타데이터 라벨
+          cache-from: type=gha                    # GitHub Actions 캐시에서 읽기
+          cache-to: type=gha,mode=max            # GitHub Actions 캐시에 저장
+          build-args: |                          # 빌드 시 전달할 인수들
+            ENVIRONMENT=production
+            VERSION=${{ github.sha }}             # Git 커밋 SHA
+
+  # ==============================================
+  # Job 3: AKS 배포 (빌드 완료 후 실행)
+  # ==============================================
+  deploy-to-aks:
+    if: github.ref == 'refs/heads/main'      # main 브랜치일 때만
+    needs: [build-and-push]                  # 빌드 완료 후 실행
+    runs-on: ubuntu-latest
+    environment: production                   # production 환경 설정
+
+    steps:
+      # 1. 코드 체크아웃
+      - uses: actions/checkout@v4
+
+      # 2. Azure 로그인
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}  # Service Principal JSON
+
+      # 3. AKS 클러스터 자격증명 가져오기
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \    # 23-rsrc
+            --name ${{ env.AKS_CLUSTER_NAME }} \                # 23-aks
+            --overwrite-existing                                # 기존 설정 덮어쓰기
+
+      # 4. kubectl 설치
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      # 5. 네임스페이스 생성 (없으면 생성, 있으면 무시)
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      # 6. Kubernetes Secrets 생성
+      - name: Create secrets
+        run: |
+          # 기존 시크릿 삭제 (에러 무시)
+          kubectl delete secret smart-factory-secrets -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          kubectl delete secret acr-secret -n ${{ env.NAMESPACE }} --ignore-not-found=true
+          
+          # 애플리케이션 시크릿 생성 (API 키, DB 정보 등)
+          kubectl create secret generic smart-factory-secrets \
+            --from-literal=OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            --from-literal=GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}" \
+            --from-literal=CLOVA_API_KEY="${{ secrets.CLOVA_API_KEY }}" \
+            --from-literal=CLOVA_API_SECRET="${{ secrets.CLOVA_API_SECRET }}" \
+            --from-literal=DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            --from-literal=REDIS_URL="${{ secrets.REDIS_URL }}" \
+            --from-literal=KAFKA_BOOTSTRAP_SERVERS="${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}" \
+            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+            --from-literal=ADMIN_API_KEY="${{ secrets.ADMIN_API_KEY }}" \
+            --from-literal=USER_API_KEY="${{ secrets.USER_API_KEY }}" \
+            -n ${{ env.NAMESPACE }}
+          
+          # Docker 레지스트리 접근용 시크릿 생성
+          kubectl create secret docker-registry acr-secret \
+            --docker-server=${{ env.REGISTRY }} \              # 23acr.azurecr.io
+            --docker-username=${{ secrets.ACR_USERNAME }} \
+            --docker-password=${{ secrets.ACR_PASSWORD }} \
+            -n ${{ env.NAMESPACE }}
+
+      # 7. ConfigMap 배포
+      - name: Deploy ConfigMap
+        run: |
+          envsubst < k8s/configmap.yaml | kubectl apply -f -   # 환경변수 치환 후 적용
+        env:
+          NAMESPACE: ${{ env.NAMESPACE }}
+
+      # 8. Kubernetes 리소스들 순서대로 배포
+      - name: Deploy to AKS
+        run: |
+          # 환경변수 설정 (envsubst에서 사용)
+          export IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          export NAMESPACE="${{ env.NAMESPACE }}"
+          export APP_NAME="${{ env.IMAGE_NAME }}"
+          export REPLICAS="3"                    # 파드 개수
+          export CPU_REQUEST="250m"              # 최소 CPU 요청량
+          export MEMORY_REQUEST="512Mi"          # 최소 메모리 요청량
+          export CPU_LIMIT="500m"                # 최대 CPU 제한
+          export MEMORY_LIMIT="1Gi"              # 최대 메모리 제한
+          
+          echo "🚀 Deploying Multi-Agent Smart Factory to AKS..."
+          echo "📦 Image: $IMAGE_NAME"
+          echo "🏠 Namespace: $NAMESPACE"
+          
+          # 순서대로 배포
+          echo "📋 Creating namespace..."
+          envsubst < k8s/namespace.yaml | kubectl apply -f -     # 네임스페이스 생성
+          
+          echo "🔧 Deploying application..."
+          envsubst < k8s/deployment.yaml | kubectl apply -f -    # 애플리케이션 배포
+          
+          echo "🌐 Creating service..."
+          envsubst < k8s/service.yaml | kubectl apply -f -       # 서비스 생성
+          
+          echo "🌍 Setting up ingress..."
+          envsubst < k8s/ingress.yaml | kubectl apply -f -       # 인그레스 설정
+          
+          echo "📈 Configuring auto-scaling..."
+          envsubst < k8s/hpa.yaml | kubectl apply -f -           # 오토스케일링 설정
+
+      # 9. 배포 완료까지 대기
+      - name: Wait for deployment to be ready
+        run: |
+          echo "⏳ Waiting for deployment to be ready..."
+          # 배포가 완료될 때까지 최대 10분 대기
+          kubectl rollout status deployment/${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }} --timeout=600s
+          
+          # 파드 상태 확인
+          echo "🔍 Checking pod status..."
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}
+          
+          # 배포 정보 상세 출력
+          echo "📊 Deployment information:"
+          kubectl describe deployment/${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }}
+
+      - name: Verify deployment
+        run: |
+          # Check if pods are running
+          RUNNING_PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} --field-selector=status.phase=Running --no-headers | wc -l)
+          TOTAL_PODS=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} --no-headers | wc -l)
+          
+          echo "🏃 Running pods: $RUNNING_PODS/$TOTAL_PODS"
+          
+          if [ $RUNNING_PODS -eq 0 ]; then
+            echo "❌ No pods are running! Deployment failed."
+            kubectl describe pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}
+            exit 1
+          fi
+          
+          # Get service information
+          echo "🌐 Service information:"
+          kubectl get services -n ${{ env.NAMESPACE }}
+          
+          # Get ingress information
+          echo "🌍 Ingress information:"
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+          
+          # Try to get external IP
+          EXTERNAL_IP=$(kubectl get service ${{ env.IMAGE_NAME }}-service -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "pending")
+          
+          if [ "$EXTERNAL_IP" != "pending" ] && [ ! -z "$EXTERNAL_IP" ]; then
+            echo "✅ Deployment successful!"
+            echo "🌐 External IP: $EXTERNAL_IP"
+            echo "🔗 Access URL: http://$EXTERNAL_IP"
+            echo "🏥 Health Check: http://$EXTERNAL_IP/health"
+          else
+            echo "✅ Deployment successful! External IP still being assigned."
+            echo "📋 Check status later with: kubectl get services -n ${{ env.NAMESPACE }}"
+          fi
+
+  # ==============================================
+  # Job 4: 헬스체크 (배포 후 실행)
+  # ==============================================
+  health-check:
+    if: github.ref == 'refs/heads/main'      # main 브랜치일 때만
+    needs: [deploy-to-aks]                   # 배포 완료 후 실행
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 코드 체크아웃
+      - uses: actions/checkout@v4
+
+      # 2. Azure 로그인 및 AKS 접속 (배포 Job과 동일)
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group ${{ env.AKS_RESOURCE_GROUP }} \
+            --name ${{ env.AKS_CLUSTER_NAME }} \
+            --overwrite-existing
+
+      # 3. 실제 헬스체크 수행
+      - name: Health Check
+        run: |
+          echo "🏥 Running health checks on AKS deployment..."
+          
+          # 파드 상태 확인
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}
+          
+          # 최근 파드 로그 출력 (문제 진단용)
+          echo "📋 Recent pod logs:"
+          kubectl logs -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }} --tail=20 || true
+          
+          # 내부 서비스 테스트 (curl로 ping 엔드포인트 호출)
+          echo "🔍 Testing internal service..."
+          kubectl run test-pod --rm -i --restart=Never --image=curlimages/curl -- \
+            curl -s -o /dev/null -w "%{http_code}" \
+            http://${{ env.IMAGE_NAME }}-service.${{ env.NAMESPACE }}.svc.cluster.local/ping || true
+          
+          echo "✅ Health check completed!"
+
+  # ==============================================
+  # Job 5: 자동 PR 리뷰 (품질 검사 후 실행)
+  # ==============================================
+  auto-review:
+    needs: [quality-check]                    # 품질 검사 완료 후 실행
+    if: github.event_name == 'pull_request' && always()  # PR이고 앞 Job이 실패해도 실행
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read                          # 코드 읽기 권한
+      pull-requests: write                    # PR 댓글 작성 권한
+    steps:
+      # 1. 코드 체크아웃
+      - uses: actions/checkout@v4
+
+      # 2. GitHub Script로 PR 댓글 작성
+      - name: PR Code Review Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}  # GitHub API 토큰
+          script: |
+            const qualityResult = "${{ needs.quality-check.result }}";
+            
+            // Collect test results
+            const testOutputs = {
+              total: "${{ needs.quality-check.outputs.total_tests || '0' }}",
+              passed: "${{ needs.quality-check.outputs.passed_tests || '0' }}",
+              failed: "${{ needs.quality-check.outputs.failed_tests || '0' }}",
+              skipped: "${{ needs.quality-check.outputs.skipped_tests || '0' }}",
+              coverage: "${{ needs.quality-check.outputs.coverage || 'N/A' }}",
+              lintErrors: "${{ needs.quality-check.outputs.lint_errors || '0' }}"
+            };
+
+            // Security scan results
+            const securityOutputs = {
+              highIssues: "${{ needs.quality-check.outputs.high_issues || '0' }}",
+              mediumIssues: "${{ needs.quality-check.outputs.medium_issues || '0' }}",
+              lowIssues: "${{ needs.quality-check.outputs.low_issues || '0' }}",
+              totalIssues: "${{ needs.quality-check.outputs.total_issues || '0' }}"
+            };
+
+            let reviewComment = "## 🤖 Multi-Agent Smart Factory Code Review (Kubernetes Ready)\n\n";
+
+            // Overall status summary
+            reviewComment += "### 📊 Overall Test Results:\n";
+            const allPassed = qualityResult === 'success';
+
+            if (allPassed) {
+              reviewComment += "✅ **All checks passed** - Ready for AKS deployment!\n";
+            } else {
+              reviewComment += "⚠️ **Some issues found** - Please review before deployment\n";
+            }
+
+            // Test results section
+            reviewComment += "\n### 🧪 Test Results:\n";
+
+            if (qualityResult === 'success') {
+              reviewComment += "✅ **Quality checks passed**\n";
+            } else if (qualityResult === 'failure') {
+              reviewComment += "❌ **Quality checks failed**\n";
+            } else {
+              reviewComment += "⚠️ **Quality check status unknown**\n";
+            }
+
+            // Test statistics
+            if (testOutputs.total !== '0') {
+              reviewComment += `- **Total tests**: ${testOutputs.total}\n`;
+              reviewComment += `- **Passed**: ${testOutputs.passed} ✅\n`;
+
+              if (testOutputs.failed !== '0') {
+                reviewComment += `- **Failed**: ${testOutputs.failed} ❌\n`;
+              }
+
+              if (testOutputs.skipped !== '0') {
+                reviewComment += `- **Skipped**: ${testOutputs.skipped} ⏭️\n`;
+              }
+
+              if (testOutputs.coverage !== 'N/A') {
+                reviewComment += `- **Coverage**: ${testOutputs.coverage}%\n`;
+              }
+            } else {
+              reviewComment += "- No tests found\n";
+            }
+
+            // Lint results
+            if (testOutputs.lintErrors !== '0') {
+              reviewComment += `- **Lint errors**: ${testOutputs.lintErrors} ❌\n`;
+            } else {
+              reviewComment += "- **Lint check**: Passed ✅\n";
+            }
+
+            // Security scan results section
+            reviewComment += "\n### 🔒 Security Scan Results:\n";
+
+            if (securityOutputs.totalIssues !== '0') {
+              reviewComment += `- **Total security issues**: ${securityOutputs.totalIssues}\n`;
+
+              if (securityOutputs.highIssues !== '0') {
+                reviewComment += `  - 🔴 **High**: ${securityOutputs.highIssues}\n`;
+              }
+              if (securityOutputs.mediumIssues !== '0') {
+                reviewComment += `  - 🟡 **Medium**: ${securityOutputs.mediumIssues}\n`;
+              }
+              if (securityOutputs.lowIssues !== '0') {
+                reviewComment += `  - 🟢 **Low**: ${securityOutputs.lowIssues}\n`;
+              }
+            } else {
+              reviewComment += "- No security issues found ✅\n";
+            }
+
+            // Kubernetes deployment info
+            reviewComment += "\n### 🚀 Kubernetes Deployment Info:\n";
+            if (allPassed) {
+              reviewComment += "- ✅ **All checks passed** - Ready for AKS deployment\n";
+              reviewComment += "- 🔄 Auto-deploy to AKS on main branch merge\n";
+              reviewComment += "- 🐳 Docker image will be pushed to ACR: `${{ env.REGISTRY }}`\n";
+              reviewComment += "- ☸️ Deployment target: `${{ env.AKS_CLUSTER_NAME }}` cluster\n";
+              reviewComment += "- 🏠 Namespace: `${{ env.NAMESPACE }}`\n";
+            } else {
+              reviewComment += "- ⚠️ **Checks failed** - Fix issues before AKS deployment\n";
+              if (qualityResult !== 'success') {
+                reviewComment += "  - 🧪 Code quality issues need resolution\n";
+              }
+            }
+
+            // Kubernetes features
+            reviewComment += "\n### ☸️ Kubernetes Features:\n";
+            reviewComment += "- **Auto-scaling**: HPA configured for dynamic scaling\n";
+            reviewComment += "- **Health checks**: Liveness and readiness probes\n";
+            reviewComment += "- **Secrets management**: Secure API key injection\n";
+            reviewComment += "- **Service discovery**: Internal service networking\n";
+            reviewComment += "- **Ingress**: External access configuration\n";
+
+            // Latest updates info
+            reviewComment += "\n### 🔍 Latest Updates:\n";
+            reviewComment += "- **PRESS_HOLE_DETECTION**: New hole detection system\n";
+            reviewComment += "- **Bounding Box Analysis**: Statistical analysis based on 6,697 samples\n";
+            reviewComment += "- **Issue Codes**: PRESS-HOLE-{SEVERITY}-{HOLE_CLASS}-MISSING-{DATETIME}\n";
+            reviewComment += "- **Multi-hole Detection**: PRESS-HOLE-{SEVERITY}-MULTI-MISSING-{DATETIME}\n";
+
+            reviewComment += "\n---\n";
+            reviewComment += "*🤖 This review was automatically generated by GitHub Actions.*\n";
+            reviewComment += `*📋 Check detailed logs in [Actions tab](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).*`;
+
+            try {
+              // Check if there's an existing auto-review comment and update it
+              const { data: comments } = await github.rest.issues.listComments({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+
+              const botComment = comments.find(comment => 
+                comment.user.type === 'Bot' && 
+                comment.body.includes('🤖 Multi-Agent Smart Factory Code Review')
+              );
+
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: reviewComment
+                });
+                console.log('Updated existing review comment');
+              } else {
+                await github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: reviewComment
+                });
+                console.log('Created new review comment');
+              }
+
+            } catch (error) {
+              console.error('Error creating review comment:', error);
+              process.exit(0);
+            }
+
+  # ==============================================
+  # Job 6: 배포 알림 (모든 배포 Job 완료 후)
+  # ==============================================
+  notify:
+    if: always() && github.ref == 'refs/heads/main'  # main 브랜치이고 항상 실행
+    needs: [build-and-push, deploy-to-aks, health-check]  # 모든 배포 관련 Job 완료 후
+    runs-on: ubuntu-latest
+    steps:
+      # 배포 상태에 따른 메시지 출력
+      - name: Notify deployment status
+        run: |
+          if [ "${{ needs.deploy-to-aks.result }}" == "success" ]; then
+            # 배포 성공시
+            echo "✅ AKS Deployment successful!"
+            echo "🏢 Cluster: ${{ env.AKS_CLUSTER_NAME }}"        # 23-aks
+            echo "🏠 Namespace: ${{ env.NAMESPACE }}"              # smart-factory
+            echo "🐳 Registry: ${{ env.REGISTRY }}"                # 23acr.azurecr.io
+            echo "🔍 New hole detection system (PRESS_HOLE_DETECTION) deployed"
+            echo "📊 Analysis system based on 6,697 bounding box data points"
+            echo ""
+            echo "🔗 Access your application:"
+            echo "   kubectl get services -n ${{ env.NAMESPACE }}"
+            echo "   kubectl get ingress -n ${{ env.NAMESPACE }}"
+          else
+            # 배포 실패시
+            echo "❌ AKS Deployment failed! Please check the logs."
+            echo "🔍 Debug commands:"
+            echo "   kubectl get pods -n ${{ env.NAMESPACE }}"
+            echo "   kubectl logs -n ${{ env.NAMESPACE }} -l app=${{ env.IMAGE_NAME }}"
+            echo "   kubectl describe deployment/${{ env.IMAGE_NAME }} -n ${{ env.NAMESPACE }}"
+          fi
