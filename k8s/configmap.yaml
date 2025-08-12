@@ -16,9 +16,9 @@ data:
   # CORS Settings
   ALLOWED_ORIGINS: "*"
   
-  # Database Configuration (non-sensitive)
-  MYSQL_DATABASE: "multichat"
-  MYSQL_USER: "root"
+  # Database Configuration (non-sensitive) 
+  MYSQL_DATABASE: "chatbot"
+  MYSQL_USER: "agriculMan"
   
   # Redis Configuration
   REDIS_HOST: "redis-service"
