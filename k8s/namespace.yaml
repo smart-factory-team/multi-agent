@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+  labels:
+    name: ${NAMESPACE}
+    app: ${APP_NAME}
+    environment: production
+    managed-by: github-actions
+  annotations:
+    description: "Multi-Agent Smart Factory with Hole Detection System"
+    created-by: "AKS CI/CD Pipeline"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ${NAMESPACE}-quota
+  namespace: ${NAMESPACE}
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+    persistentvolumeclaims: "5"
+    pods: "20"
+    services: "10"
+    secrets: "10"
+    configmaps: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ${NAMESPACE}-limits
+  namespace: ${NAMESPACE}
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "250m"
+      memory: "512Mi"
+    type: Container
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
