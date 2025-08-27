@@ -150,7 +150,7 @@ LLM_CONFIGS = {
     },
     "anthropic": {
         "api_key": settings.ANTHROPIC_API_KEY,
-        "model": "claude-3-5-sonnet-20240620",
+        "model": "claude-sonnet-4-20250514",
         "max_tokens": AGENT_TOKEN_LIMITS["claude"],
         "temperature": 0.2
     }
